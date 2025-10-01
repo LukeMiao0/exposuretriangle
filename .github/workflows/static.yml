@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>相機曝光三角動態演示</title>
+    <style>
+        /* 樣式保持不變 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #1a2a6c;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+            color: #555;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+        
+        .controls {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .control-group {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .control-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .control-icon {
+            font-size: 2rem;
+            margin-right: 1rem;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(26, 42, 108, 0.1);
+            color: #1a2a6c;
+        }
+        
+        .control-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a2a6c;
+        }
+        
+        .control-description {
+            margin-bottom: 1rem;
+            line-height: 1.5;
+            opacity: 0.9;
+            color: #555;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .slider-value {
+            min-width: 80px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #b21f1f;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 10px;
+            -webkit-appearance: none;
+            background: rgba(26, 42, 108, 0.2);
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #fdbb2d;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .visualization {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .exposure-preview {
+            width: 300px;
+            height: 300px;
+            background: #888888; /* 中性灰色背景 */
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e0e0e0;
+            transition: all 0.5s ease;
+        }
+        
+        .preview-shapes {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+        
+        .shape {
+            position: absolute;
+            background: #444444; /* 較深的灰色形體 */
+            transition: all 0.5s ease;
+        }
+        
+        .circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            top: 50px;
+            left: 50px;
+        }
+        
+        .rectangle {
+            width: 100px;
+            height: 60px;
+            top: 150px;
+            left: 80px;
+        }
+        
+        .triangle {
+            width: 0;
+            height: 0;
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-bottom: 80px solid #444444;
+            top: 60px;
+            right: 50px;
+            background: transparent !important;
+        }
+        
+        .exposure-meter {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .meter-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            color: #b21f1f;
+        }
+        
+        .meter-bar {
+            height: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1a2a6c, #b21f1f, #fdbb2d);
+            width: 50%;
+            transition: width 0.5s ease;
+        }
+        
+        .exposure-status {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .triangle-container {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 2rem;
+        }
+        
+        .triangle {
+            width: 100%;
+            height: 300px;
+            position: relative;
+        }
+        
+        .triangle-side {
+            position: absolute;
+            border: 2px solid rgba(26, 42, 108, 0.5);
+        }
+        
+        .triangle-label {
+            position: absolute;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 5px;
+            color: #1a2a6c;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .triangle-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            background: rgba(253, 187, 45, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #b21f1f;
+        }
+        
+        .aperture-visual {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, #f0f0f0, #ddd);
+            border-radius: 50%;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .aperture-opening {
+            background: #333;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .aperture-label {
+            position: absolute;
+            bottom: -30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            color: #1a2a6c;
+        }
+        
+        .info-panel {
+            margin-top: 2rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .info-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            color: #1a2a6c;
+        }
+        
+        .info-content {
+            line-height: 1.6;
+            color: #555;
+        }
+        
+        .info-content ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .info-content li {
+            margin-bottom: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .controls, .visualization {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>相機曝光三角動態演示</h1>
+            <p class="subtitle">光圈、快門和ISO是決定照片曝光的三個關鍵參數。調整其中一個參數時，曝光值會相應變化。通過這個互動式演示，直觀理解曝光三角的工作原理。</p>
+        </header>
+        
+        <div class="content">
+            <div class="controls">
+                <div class="control-group">
+                    <div class="control-header">
+                        <div class="control-icon">ƒ</div>
+                        <div class="control-title">光圈 (Aperture)</div>
+                    </div>
+                    <p class="control-description">控制鏡頭開口大小，影響進光量和景深。<strong>f值越小，光圈越大，進光量越多</strong>；f值越大，光圈越小，進光量越少。</p>
+                    <div class="slider-container">
+                        <input type="range" id="aperture-slider" min="1.4" max="22" step="0.1" value="8">
+                        <div class="slider-value" id="aperture-value">ƒ/8</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-header">
+                        <div class="control-icon">⧗</div>
+                        <div class="control-title">快門速度 (Shutter Speed)</div>
+                    </div>
+                    <p class="control-description">控制感光元件曝光時間，影響運動模糊。<strong>快門越慢（數值越小），進光量越多</strong>；快門越快（數值越大），進光量越少。</p>
+                    <div class="slider-container">
+                        <input type="range" id="shutter-slider" min="1" max="1000" step="1" value="125">
+                        <div class="slider-value" id="shutter-value">1/125s</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-header">
+                        <div class="control-icon">ISO</div>
+                        <div class="control-title">感光度 (ISO)</div>
+                    </div>
+                    <p class="control-description">控制感光元件對光的敏感度，影響影像噪點。數值越高，對光越敏感，但噪點越多。</p>
+                    <div class="slider-container">
+                        <input type="range" id="iso-slider" min="100" max="6400" step="100" value="200">
+                        <div class="slider-value" id="iso-value">ISO 200</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="visualization">
+                <div class="aperture-visual">
+                    <div class="aperture-opening" id="aperture-opening"></div>
+                    <div class="aperture-label" id="aperture-visual-label">ƒ/8</div>
+                </div>
+                
+                <div class="exposure-preview">
+                    <div class="preview-shapes">
+                        <div class="shape circle"></div>
+                        <div class="shape rectangle"></div>
+                        <div class="shape triangle"></div>
+                    </div>
+                </div>
+                
+                <div class="exposure-meter">
+                    <h3>曝光值 (EV)</h3>
+                    <div class="meter-value" id="exposure-value">0.0</div>
+                    <div class="meter-bar">
+                        <div class="meter-fill" id="exposure-fill"></div>
+                    </div>
+                    <div class="exposure-status" id="exposure-status">正常曝光</div>
+                </div>
+                
+                <div class="triangle-container">
+                    <div class="triangle">
+                        <div class="triangle-side" style="top: 0; left: 50%; transform: translateX(-50%); width: 2px; height: 100%;"></div>
+                        <div class="triangle-side" style="top: 0; left: 0; width: 100%; height: 2px;"></div>
+                        <div class="triangle-side" style="bottom: 0; left: 0; width: 141.4%; height: 2px; transform: rotate(45deg); transform-origin: left bottom;"></div>
+                        
+                        <div class="triangle-label" style="top: 10px; left: 50%; transform: translateX(-50%);">光圈</div>
+                        <div class="triangle-label" style="bottom: 10px; left: 10px;">快門</div>
+                        <div class="triangle-label" style="bottom: 10px; right: 10px;">ISO</div>
+                        
+                        <div class="triangle-center">曝光</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h3 class="info-title">曝光三角原理</h3>
+            <div class="info-content">
+                <p>曝光三角描述了光圈、快門速度和ISO之間的相互關係。這三個參數共同決定了照片的曝光量：</p>
+                <ul>
+                    <li><strong>光圈</strong>：控制進入相機的光量，同時影響景深（背景模糊程度）。<strong>f值越小，光圈越大，進光量越多</strong></li>
+                    <li><strong>快門速度</strong>：控制感光元件曝光時間，同時影響運動模糊。<strong>快門越慢（數值越小），進光量越多</strong></li>
+                    <li><strong>ISO</strong>：控制感光元件對光的敏感度，同時影響影像噪點。數值越高，對光越敏感，但噪點越多</li>
+                </ul>
+                <p>您可以獨立調整每個參數，觀察它們如何影響最終的曝光效果：</p>
+                <ul>
+                    <li><strong>向左移動光圈滑桿</strong>：f值變小，光圈變大，進光量增加，曝光過度</li>
+                    <li><strong>向右移動光圈滑桿</strong>：f值變大，光圈變小，進光量減少，曝光不足</li>
+                    <li><strong>向左移動快門滑桿</strong>：快門變慢，進光量增加，曝光過度</li>
+                    <li><strong>向右移動快門滑桿</strong>：快門變快，進光量減少，曝光不足</li>
+                    <li><strong>向右移動ISO滑桿</strong>：ISO變高，感光度增加，曝光過度</li>
+                    <li><strong>向左移動ISO滑桿</strong>：ISO變低，感光度減少，曝光不足</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 獲取DOM元素
+        const apertureSlider = document.getElementById('aperture-slider');
+        const shutterSlider = document.getElementById('shutter-slider');
+        const isoSlider = document.getElementById('iso-slider');
+        
+        const apertureValue = document.getElementById('aperture-value');
+        const shutterValue = document.getElementById('shutter-value');
+        const isoValue = document.getElementById('iso-value');
+        
+        const exposureValue = document.getElementById('exposure-value');
+        const exposureFill = document.getElementById('exposure-fill');
+        const exposureStatus = document.getElementById('exposure-status');
+        
+        const shapes = document.querySelectorAll('.shape');
+        const preview = document.querySelector('.exposure-preview');
+        const apertureOpening = document.getElementById('aperture-opening');
+        const apertureVisualLabel = document.getElementById('aperture-visual-label');
+
+        // 設定初始值
+        apertureSlider.value = 8;
+        shutterSlider.value = 125;
+        isoSlider.value = 200;
+
+        // 正確的曝光計算 - 修正快門邏輯
+        function calculateExposure() {
+            const aperture = parseFloat(apertureSlider.value);
+            const shutter = parseFloat(shutterSlider.value);
+            const iso = parseFloat(isoSlider.value);
+            
+            // 簡化物理模型：
+            // 1. 光圈：f值越小，進光量越多（反比平方關係）
+            // 2. 快門：快門越慢（數值越小），進光量越多（反比關係）
+            // 3. ISO：數值越大，感光度越高（正比關係）
+            
+            // 光圈影響：f值與進光量是平方反比關係
+            const apertureFactor = 1 / Math.pow(aperture, 2);
+            
+            // 快門影響：快門數值與進光量是反比關係
+            // 快門數值越小（如1/30s），時間越長，進光量越多
+            const shutterFactor = 1 / shutter;
+            
+            // ISO影響：ISO與感光度是正比關係
+            const isoFactor = iso / 100;
+            
+            // 總曝光量
+            const totalExposure = apertureFactor * shutterFactor * isoFactor;
+            
+            // 轉換為EV值（對數尺度）並調整基準
+            // 讓 f/8, 1/125s, ISO200 時 EV = 0
+            const baseExposure = (1 / Math.pow(8, 2)) * (1 / 125) * (200 / 100);
+            return Math.log2(totalExposure / baseExposure);
+        }
+        
+        // 更新光圈視覺化
+        function updateApertureVisual() {
+            const aperture = parseFloat(apertureSlider.value);
+            // f值越小，光圈越大（反向關係）
+            const size = 120 * (1.4 / aperture); // 1.4是最大光圈
+            apertureOpening.style.width = `${Math.min(size, 190)}px`;
+            apertureOpening.style.height = `${Math.min(size, 190)}px`;
+            apertureVisualLabel.textContent = `ƒ/${aperture.toFixed(1)}`;
+        }
+        
+        // 更新曝光顯示
+        function updateExposureDisplay() {
+            const ev = calculateExposure();
+            
+            exposureValue.textContent = ev.toFixed(1);
+            
+            // 更新曝光條 (EV範圍從-3到+3)
+            const fillPercentage = Math.min(Math.max((ev + 3) * 16.67, 0), 100);
+            exposureFill.style.width = `${fillPercentage}%`;
+            
+            // 計算亮度值
+            let backgroundBrightness = 50; // 正常曝光時的中性灰色
+            let shapeBrightness = 1; // 形狀的基礎亮度
+            
+            if (ev > 0) {
+                // 過曝：背景越來越白，形狀越來越亮
+                backgroundBrightness = Math.min(50 + (ev * 25), 100);
+                shapeBrightness = Math.min(1 + (ev * 0.5), 2);
+            } else {
+                // 曝光不足：背景越來越暗，形狀越來越暗
+                backgroundBrightness = Math.max(50 + (ev * 25), 0);
+                shapeBrightness = Math.max(1 + (ev * 0.5), 0);
+            }
+            
+            // 更新背景和形狀
+            preview.style.backgroundColor = `hsl(0, 0%, ${backgroundBrightness}%)`;
+            
+            shapes.forEach(shape => {
+                if (shape.classList.contains('triangle')) {
+                    // 三角形特殊處理
+                    const colorValue = Math.max(0, Math.min(255, 68 * shapeBrightness));
+                    shape.style.borderBottomColor = `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
+                } else {
+                    shape.style.filter = `brightness(${shapeBrightness * 100}%)`;
+                }
+            });
+            
+            // 更新曝光狀態
+            let statusText = "正常曝光";
+            let statusColor = "#fdbb2d";
+            
+            if (ev < -1.5) {
+                statusText = "嚴重曝光不足";
+                statusColor = "#1a2a6c";
+            } else if (ev < -0.5) {
+                statusText = "曝光不足";
+                statusColor = "#1a2a6c";
+            } else if (ev > 1.5) {
+                statusText = "嚴重曝光過度";
+                statusColor = "#b21f1f";
+            } else if (ev > 0.5) {
+                statusText = "曝光過度";
+                statusColor = "#b21f1f";
+            } else {
+                statusText = "正常曝光";
+                statusColor = "#fdbb2d";
+            }
+            
+            exposureStatus.textContent = statusText;
+            exposureStatus.style.color = statusColor;
+        }
+        
+        // 當調整光圈時 - 獨立調節
+        apertureSlider.addEventListener('input', function() {
+            const aperture = parseFloat(this.value);
+            apertureValue.textContent = `ƒ/${aperture.toFixed(1)}`;
+            
+            updateApertureVisual();
+            updateExposureDisplay();
+        });
+        
+        // 當調整快門時 - 獨立調節
+        shutterSlider.addEventListener('input', function() {
+            const shutter = parseFloat(this.value);
+            shutterValue.textContent = `1/${shutter}s`;
+            
+            updateExposureDisplay();
+        });
+        
+        // 當調整ISO時 - 獨立調節
+        isoSlider.addEventListener('input', function() {
+            const iso = parseFloat(this.value);
+            isoValue.textContent = `ISO ${Math.round(iso)}`;
+            
+            updateExposureDisplay();
+        });
+        
+        // 初始化
+        apertureValue.textContent = "ƒ/8";
+        shutterValue.textContent = "1/125s";
+        isoValue.textContent = "ISO 200";
+        
+        updateApertureVisual();
+        updateExposureDisplay();
+    </script>
+</body>
+</html>
